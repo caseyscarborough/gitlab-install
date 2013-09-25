@@ -10,15 +10,16 @@
 #
 # USAGE
 # curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04-v6.1.sh | 
-#   DOMAIN_VAR=gitlab.example.com sudo bash
+#   sudo DOMAIN_VAR=gitlab.example.com bash
 
 APP_ROOT="/home/git/gitlab"
 APP_USER="git"
 USER_ROOT="/home/git"
 
 # Check for domain variable.
-if [ -z $DOMAIN_VAR ]; then
-  echo "Installing GitLab for domain: $DOMAIN_VAR"
+if [ $DOMAIN_VAR ]; then
+  echo "Installing GitLab for $DOMAIN_VAR"
+  echo "GitLab URL: http://$DOMAIN_VAR/"
 else
   echo "Please specify DOMAIN_VAR"
   exit
