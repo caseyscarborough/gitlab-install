@@ -152,17 +152,17 @@ sudo sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\t${DOMAIN_VAR}/" /etc/hosts
 sudo service gitlab start
 sudo service nginx restart
 
-echo "*==================================================================*\n"
+echo -e "*==================================================================*\n"
     
-echo " GitLab has been installed successfully!"
-echo " Navigate to $DOMAIN_VAR in your browser to access the application.\n"
+echo -e " GitLab has been installed successfully!"
+echo -e " Navigate to $DOMAIN_VAR in your browser to access the application.\n"
 
-echo " Login with the default credentials:"
-echo "   admin@local.host"
-echo "   5iveL!fe\n"
+echo -e " Login with the default credentials:"
+echo -e "   admin@local.host"
+echo -e "   5iveL!fe\n"
 
-echo " Your MySQL username and passwords are listed here. Keep them safe."
-echo "   root   $MYSQL_ROOT_PASSWORD"
-echo "    git   $MYSQL_GIT_PASSWORD\n"
+echo -e " Your MySQL username and passwords are listed here. Keep them safe."
+echo -e "   root   $MYSQL_ROOT_PASSWORD"
+echo -e "    git   $MYSQL_GIT_PASSWORD\n"
 
-echo "*==================================================================*"
+echo -e "*==================================================================*"
