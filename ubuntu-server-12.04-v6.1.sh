@@ -88,7 +88,7 @@ sudo apt-get install -y git
 ##
 # Set up the Git configuration.
 #
-echo -e "\n*== Configuring Git..."
+echo -e "\n*== Configuring Git...\n"
 sudo -u $APP_USER -H git config --global user.name "GitLab"
 sudo -u $APP_USER -H git config --global user.email "gitlab@localhost"
 sudo -u $APP_USER -H git config --global core.autocrlf input
@@ -96,7 +96,7 @@ sudo -u $APP_USER -H git config --global core.autocrlf input
 ## 
 # Install GitLab Shell
 #
-echo -e "\n*== Installing GitLab Shell..."
+echo -e "\n*== Installing GitLab Shell...\n"
 cd $USER_ROOT
 sudo -u $APP_USER -H git clone https://github.com/gitlabhq/gitlab-shell.git
 cd gitlab-shell
@@ -108,7 +108,7 @@ sudo -u $APP_USER -H ./bin/install
 ## 
 # Install GitLab
 #
-echo -e "\n*== Installing GitLab..."
+echo -e "\n*== Installing GitLab...\n"
 cd $USER_ROOT
 sudo -u $APP_USER -H git clone https://github.com/gitlabhq/gitlabhq.git gitlab
 cd $APP_ROOT
@@ -125,7 +125,7 @@ sudo -u $APP_USER -H cp config/unicorn.rb.example config/unicorn.rb
 ##
 # Update permissions.
 #
-echo -e "\n*== Updating permissions..."
+echo -e "\n*== Updating permissions...\n"
 sudo -u $APP_USER -H mkdir tmp/pids/
 sudo -u $APP_USER -H mkdir tmp/sockets/
 sudo -u $APP_USER -H mkdir public/uploads
@@ -140,7 +140,7 @@ sudo chmod -R u+rwX public/uploads
 ##
 # Install required Gems.
 #
-echo -e "\n*== Installing required gems..."
+echo -e "\n*== Installing required gems...\n"
 cd $APP_ROOT
 sudo gem install charlock_holmes --version '0.6.9.4'
 sudo -u $APP_USER -H bundle install --deployment --without development test postgres aws
@@ -158,7 +158,7 @@ sudo update-rc.d gitlab defaults 21
 ##
 # Nginx installation
 #
-echo -e "\n*== Installing Nginx..."
+echo -e "\n*== Installing Nginx...\n"
 sudo apt-get install -y nginx
 sudo cp lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
 sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
@@ -170,7 +170,7 @@ echo -e "\n*== Starting Gitlab!\n"
 sudo service gitlab start
 sudo service nginx restart
 
-sudo echo -e "root: ${MYSQL_ROOT_PASSWORD}\ngitlab: {MYSQL_GIT_PASSWORD}" > $APP_ROOT/config/mysql.yml
+sudo echo -e "root: ${MYSQL_ROOT_PASSWORD}\ngitlab: ${MYSQL_GIT_PASSWORD}" > $APP_ROOT/config/mysql.yml
 sudo -u $APP_USER -H chmod o-rwx $APP_ROOT/config/database.yml
 
 echo -e "*==================================================================*\n"
