@@ -12,19 +12,21 @@
 # curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04-v6.1.sh | 
 #   sudo DOMAIN_VAR=gitlab.example.com bash
 
-APP_ROOT="/home/git/gitlab"
-APP_USER="git"
-USER_ROOT="/home/git"
 
 # Check for domain variable.
 if [ $DOMAIN_VAR ]; then
   echo "Installing GitLab for $DOMAIN_VAR"
   echo "GitLab URL: http://$DOMAIN_VAR/"
+  sleep 3
 else
   echo "Please specify DOMAIN_VAR"
   exit
 fi
 
+# Set variables.
+APP_ROOT="/home/git/gitlab"
+APP_USER="git"
+USER_ROOT="/home/git"
 GITLAB_URL="http:\/\/$DOMAIN_VAR\/"
 
 ## 
@@ -146,5 +148,21 @@ sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
 sudo sed -i "s/YOUR_SERVER_FQDN/${DOMAIN_VAR}/" /etc/nginx/sites-enabled/gitlab
 sudo sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\t${DOMAIN_VAR}/" /etc/hosts
 
+# Start GitLab and Nginx!
 sudo service gitlab start
 sudo service nginx restart
+
+echo "*==================================================================*\n"
+    
+echo " GitLab has been installed successfully!"
+echo " Navigate to $DOMAIN_VAR in your browser to access the application.\n"
+
+echo " Login with the default credentials:"
+echo "   admin@local.host"
+echo "   5iveL!fe\n"
+
+echo " Your MySQL username and passwords are listed here. Keep them safe."
+echo "   root   $MYSQL_ROOT_PASSWORD"
+echo "    git   $MYSQL_GIT_PASSWORD\n"
+
+echo "*==================================================================*"
