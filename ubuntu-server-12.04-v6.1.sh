@@ -1,51 +1,60 @@
 #!/bin/bash
-
-# Unattended GitLab Installation
+# Unattended GitLab Installation for Ubuntu Server 12.04 64-Bit
 #
 # Maintainer: @caseyscarborough
 # GitLab Version: 6.1
 #
-# This script installs the GitLab server on Ubuntu Server 12.04,
-# including all dependencies.
+# This script installs the GitLab server on Ubuntu Server 12.04 and all dependencies.
 #
 # USAGE
 # curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04-v6.1.sh | 
 #   sudo DOMAIN_VAR=gitlab.example.com bash
 
+# Set the application user and home directory.
+APP_USER=git
+USER_ROOT=/home/$APP_USER
+
+# Set the application root.
+APP_ROOT=$USER_ROOT/gitlab
+
+# Set the URL for the GitLab instance.
+GITLAB_URL="http:\/\/$DOMAIN_VAR\/"
 
 # Check for domain variable.
 if [ $DOMAIN_VAR ]; then
-  echo "Installing GitLab for $DOMAIN_VAR"
-  echo "GitLab URL: http://$DOMAIN_VAR/"
+  echo -e "*==================================================================*\n"
+
+  echo -e " GitLab Installation has begun!\n"
+  
+  echo -e "   Domain: $DOMAIN_VAR"
+  echo -e "   GitLab URL: http://$DOMAIN_VAR/"
+  echo -e "   Application Root: $APP_ROOT\n"
+  
+  echo -e "*==================================================================*\n"
   sleep 3
 else
   echo "Please specify DOMAIN_VAR"
   exit
 fi
 
-# Set variables.
-APP_ROOT="/home/git/gitlab"
-APP_USER="git"
-USER_ROOT="/home/git"
-GITLAB_URL="http:\/\/$DOMAIN_VAR\/"
-
 ## 
 # Installing Packages
 #
-echo "Updating packages..."
+echo -e "\n*== Installing new packages...\n"
 sudo apt-get update -y
 sudo apt-get upgrade -y
 sudo apt-get install -y build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python-software-properties
 # sudo DEBIAN_FRONTEND='noninteractive' apt-get install -y postfix-policyd-spf-python postfix
 
+# Generate passwords for MySQL root and gitlab users.
 MYSQL_ROOT_PASSWORD=$(makepasswd --char=25)
 MYSQL_GIT_PASSWORD=$(makepasswd --char=25)
 
 ##
 # Download and compile Ruby
 #
+echo -e "\n*== Downloading and configuring Ruby...\n"
 mkdir /tmp/ruby && cd /tmp/ruby
-echo "Downloading and configuring Ruby..."
 curl --progress ftp://ftp.ruby-lang.org/pub/ruby/2.0/ruby-2.0.0-p247.tar.gz | tar xz
 cd ruby-2.0.0-p247
 ./configure
@@ -59,6 +68,7 @@ sudo adduser --disabled-login --gecos 'GitLab' $APP_USER
 ##
 # MySQL Installation
 # 
+echo -e "\n*== Installing MySQL Server...\n"
 echo mysql-server mysql-server/root_password password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
 echo mysql-server mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
 sudo apt-get install -y mysql-server mysql-client libmysqlclient-dev
@@ -70,13 +80,23 @@ mysql -u root -p$MYSQL_ROOT_PASSWORD -e "GRANT SELECT, LOCK TABLES, INSERT, UPDA
 ##
 # Update Git
 #
+echo -e "\n*== Updating Git...\n"
 sudo add-apt-repository ppa:git-core/ppa
 sudo apt-get update
 sudo apt-get install -y git
 
+##
+# Set up the Git configuration.
+#
+echo -e "\n*== Configuring Git..."
+sudo -u $APP_USER -H git config --global user.name "GitLab"
+sudo -u $APP_USER -H git config --global user.email "gitlab@localhost"
+sudo -u $APP_USER -H git config --global core.autocrlf input
+
 ## 
 # Install GitLab Shell
 #
+echo -e "\n*== Installing GitLab Shell..."
 cd $USER_ROOT
 sudo -u $APP_USER -H git clone https://github.com/gitlabhq/gitlab-shell.git
 cd gitlab-shell
@@ -88,6 +108,7 @@ sudo -u $APP_USER -H ./bin/install
 ## 
 # Install GitLab
 #
+echo -e "\n*== Installing GitLab..."
 cd $USER_ROOT
 sudo -u $APP_USER -H git clone https://github.com/gitlabhq/gitlabhq.git gitlab
 cd $APP_ROOT
@@ -104,6 +125,7 @@ sudo -u $APP_USER -H cp config/unicorn.rb.example config/unicorn.rb
 ##
 # Update permissions.
 #
+echo -e "\n*== Updating permissions..."
 sudo -u $APP_USER -H mkdir tmp/pids/
 sudo -u $APP_USER -H mkdir tmp/sockets/
 sudo -u $APP_USER -H mkdir public/uploads
@@ -116,15 +138,9 @@ sudo chmod -R u+rwX tmp/sockets/
 sudo chmod -R u+rwX public/uploads
 
 ##
-# Set up the Git configuration.
-#
-sudo -u $APP_USER -H git config --global user.name "GitLab"
-sudo -u $APP_USER -H git config --global user.email "gitlab@localhost"
-sudo -u $APP_USER -H git config --global core.autocrlf input
-
-##
 # Install required Gems.
 #
+echo -e "\n*== Installing required gems..."
 cd $APP_ROOT
 sudo gem install charlock_holmes --version '0.6.9.4'
 sudo -u $APP_USER -H bundle install --deployment --without development test postgres aws
@@ -142,6 +158,7 @@ sudo update-rc.d gitlab defaults 21
 ##
 # Nginx installation
 #
+echo -e "\n*== Installing Nginx..."
 sudo apt-get install -y nginx
 sudo cp lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
 sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
@@ -149,11 +166,15 @@ sudo sed -i "s/YOUR_SERVER_FQDN/${DOMAIN_VAR}/" /etc/nginx/sites-enabled/gitlab
 sudo sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\t${DOMAIN_VAR}/" /etc/hosts
 
 # Start GitLab and Nginx!
+echo -e "\n*== Starting Gitlab!\n"
 sudo service gitlab start
 sudo service nginx restart
 
+sudo echo -e "root: ${MYSQL_ROOT_PASSWORD}\ngitlab: {MYSQL_GIT_PASSWORD}" > $APP_ROOT/config/mysql.yml
+sudo -u $APP_USER -H chmod o-rwx $APP_ROOT/config/database.yml
+
 echo -e "*==================================================================*\n"
-    
+
 echo -e " GitLab has been installed successfully!"
 echo -e " Navigate to $DOMAIN_VAR in your browser to access the application.\n"
 
@@ -161,8 +182,10 @@ echo -e " Login with the default credentials:"
 echo -e "   admin@local.host"
 echo -e "   5iveL!fe\n"
 
-echo -e " Your MySQL username and passwords are listed here. Keep them safe."
-echo -e "   root   $MYSQL_ROOT_PASSWORD"
-echo -e "    git   $MYSQL_GIT_PASSWORD\n"
+echo -e " Your MySQL username and passwords are located in the following file:"
+echo -e "   $APP_ROOT/config/mysql.yml\n"
+
+echo -e " Script written by Casey Scarborough, 2013."
+echo -e " https://github.com/caseyscarborough\n"
 
 echo -e "*==================================================================*"
