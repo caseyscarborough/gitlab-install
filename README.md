@@ -6,17 +6,24 @@ This repository holds scripts that will perform automated installation of [GitLa
 
 These are currently the tested and supported systems.
 
-* Ubuntu 12.04 64-Bit
-* Ubuntu 13.04 64-Bit
+* Ubuntu Server 12.04 64-Bit
+* Ubuntu Server 13.04 64-Bit
+* Debian 7.1 64-Bit
 
 ## Usage
 
-For Ubuntu 12.04 or 13.04 64-Bit, issue the following command, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name:
+For __Ubuntu Server 12.04 or 13.04 64-Bit__, issue the following command, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name:
 
 ```bash
 curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-v6.1.sh | sudo DOMAIN_VAR=gitlab.example.com bash
 ```
 
+For __Debian 7.1 64-Bit__, issue the following command _as the root user_, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name:
+
+```bash
+curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash
+```
+ 
 After the script runs, your installation of GitLab should be fully completed and ready to go. You can then navigate to the application using your server's domain name.
 
 ## Troubleshooting
