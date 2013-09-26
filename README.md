@@ -15,13 +15,15 @@ These are currently the tested and supported systems.
 For __Ubuntu Server 12.04 or 13.04 64-Bit__, issue the following command, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name:
 
 ```bash
-curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-v6.1.sh | sudo DOMAIN_VAR=gitlab.example.com bash
+curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04.sh | sudo DOMAIN_VAR=gitlab.example.com bash
 ```
+
+> Note: Although this script is titled _ubuntu-server-12.04.sh_, it does in fact work on both 12.04 and 13.04.
 
 For __Debian 7.1 64-Bit__, issue the following command _as the root user_, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name. You'll also more than likely need to install `curl` with `apt-get install -y curl`.
 
 ```bash
-curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash
+curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1.sh | DOMAIN_VAR=gitlab.example.com bash
 ```
  
 After the script runs, your installation of GitLab should be fully completed and ready to go. You can then navigate to the application using your server's domain name.
