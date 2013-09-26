@@ -26,7 +26,7 @@ GITLAB_URL="http:\/\/$DOMAIN_VAR\/"
 
 # Check for domain variable.
 if [ $DOMAIN_VAR ]; then
-  echo -e "*==================================================================*\n"
+  echo -e "\n\n*==================================================================*\n"
   echo -e " GitLab Installation has begun!\n"
   echo -e "   Domain: $DOMAIN_VAR"
   echo -e "   GitLab URL: http://$DOMAIN_VAR/"
