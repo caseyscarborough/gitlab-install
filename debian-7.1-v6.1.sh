@@ -8,6 +8,7 @@
 #
 # USAGE
 # This script must be run as the root user on a fresh install of Debian 7.1.
+# You may also need to install curl with `apt-get install curl`
 # curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash
 
 GITLAB_USER=git
@@ -25,7 +26,8 @@ if [ $DOMAIN_VAR ]; then
   echo -e "*==================================================================*\n"
   sleep 3
 else
-  echo "Please specify DOMAIN_VAR"
+  echo "Please specify DOMAIN_VAR when running the script. See below:"
+  echo "curl debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash"
   exit
 fi
 
@@ -35,7 +37,7 @@ fi
 echo -e "\n*== Installing new packages...\n"
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y sudo curl build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python2.7 python-software-properties
+apt-get install -y sudo build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils
 
 # Generate passwords for MySQL root and gitlab users.
 MYSQL_ROOT_PASSWORD=$(makepasswd --char=25)
@@ -68,7 +70,7 @@ mysql -u root -p$MYSQL_ROOT_PASSWORD -e "GRANT SELECT, LOCK TABLES, INSERT, UPDA
 ##
 # Set up the Git configuration.
 #
-echo -e "\n*== Configuring Git...\n"
+echo -e "\n*== Configuring Git..."
 sudo -u $GITLAB_USER -H git config --global user.name "GitLab"
 sudo -u $GITLAB_USER -H git config --global user.email "gitlab@localhost"
 sudo -u $GITLAB_USER -H git config --global core.autocrlf input
