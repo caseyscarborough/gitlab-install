@@ -18,7 +18,7 @@ For __Ubuntu Server 12.04 or 13.04 64-Bit__, issue the following command, ensuri
 curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-v6.1.sh | sudo DOMAIN_VAR=gitlab.example.com bash
 ```
 
-For __Debian 7.1 64-Bit__, issue the following command _as the root user_, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name:
+For __Debian 7.1 64-Bit__, issue the following command _as the root user_, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name. You'll also more than likely need to install `curl` with `apt-get install -y curl`.
 
 ```bash
 curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash
