@@ -7,9 +7,8 @@
 # This script installs GitLab server on Debian 7.1 with all dependencies.
 #
 # USAGE
-# $ su
-# $ curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | 
-#   sudo DOMAIN_VAR=gitlab.example.com bash
+# This script must be run as the root user on a fresh install of Debian 7.1.
+# curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash
 
 GITLAB_USER=git
 GITLAB_USER_ROOT=/home/$GITLAB_USER
