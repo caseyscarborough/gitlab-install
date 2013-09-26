@@ -1,13 +1,13 @@
 #!/bin/bash
-# Unattended GitLab Installation for Ubuntu Server 12.04 64-Bit
+# Unattended GitLab Installation for Ubuntu Server 12.04 and 13.04 64-Bit
 #
 # Maintainer: @caseyscarborough
 # GitLab Version: 6.1
 #
-# This script installs the GitLab server on Ubuntu Server 12.04 and all dependencies.
+# This script installs GitLab server on Ubuntu Server 12.04 or 13.04 with all dependencies.
 #
 # USAGE
-# curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04-v6.1.sh | 
+# curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-v6.1.sh | 
 #   sudo DOMAIN_VAR=gitlab.example.com bash
 
 # Set the application user and home directory.
