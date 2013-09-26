@@ -6,8 +6,16 @@
 #
 # This script installs GitLab server on Ubuntu Server 12.04 or 13.04 with all dependencies.
 #
+# INFORMATION
+# Distribution      : Ubuntu 12.04 & 13.04 64-Bit
+# GitLab Version    : 6.1
+# Web Server        : Nginx
+# Init System       : systemd
+# Database          : MySQL
+# Contributors      : @caseyscarborough
+#
 # USAGE
-# curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-v6.1.sh | 
+# curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04.sh | 
 #   sudo DOMAIN_VAR=gitlab.example.com bash
 
 # Set the application user and home directory.

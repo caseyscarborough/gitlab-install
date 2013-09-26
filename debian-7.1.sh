@@ -6,10 +6,18 @@
 #
 # This script installs GitLab server on Debian 7.1 with all dependencies.
 #
+# INFORMATION
+# Distribution      : Debian 7.1 64-Bit
+# GitLab Version    : 6.1
+# Web Server        : Nginx
+# Init System       : sysvinit
+# Database          : MySQL
+# Contributors      : @caseyscarborough
+#
 # USAGE
 # This script must be run as the root user on a fresh install of Debian 7.1.
 # You may also need to install curl with `apt-get install curl`
-# curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1-v6.1.sh | DOMAIN_VAR=gitlab.example.com bash
+# curl https://raw.github.com/caseyscarborough/gitlab-install/master/debian-7.1.sh | DOMAIN_VAR=gitlab.example.com bash
 
 GITLAB_USER=git
 GITLAB_USER_ROOT=/home/$GITLAB_USER
