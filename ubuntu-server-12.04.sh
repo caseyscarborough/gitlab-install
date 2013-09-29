@@ -91,6 +91,8 @@ GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON
 " > /tmp/gitlab.sql
 mysql -u root -p$MYSQL_ROOT_PASSWORD -e "SOURCE /tmp/gitlab.sql"
 
+sudo rm /tmp/gitlab.sql
+
 ##
 # Update Git
 #
