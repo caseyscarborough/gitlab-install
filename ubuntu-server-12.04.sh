@@ -81,9 +81,14 @@ echo mysql-server mysql-server/root_password password $MYSQL_ROOT_PASSWORD | sud
 echo mysql-server mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
 sudo apt-get install -y mysql-server mysql-client libmysqlclient-dev
 
+# Secure the database.
+mysql -u root -p$MYSQL_ROOT_PASSWORD -e "DROP USER ''@'localhost';"
+mysql -u root -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE test;"
+
 mysql -u root -p$MYSQL_ROOT_PASSWORD -e "CREATE USER 'gitlab'@'localhost' IDENTIFIED BY '$MYSQL_GIT_PASSWORD';"
 mysql -u root -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS gitlabhq_production DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;"
 mysql -u root -p$MYSQL_ROOT_PASSWORD -e "GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON gitlabhq_production.* TO 'gitlab'@'localhost';"
+
 
 ##
 # Update Git
