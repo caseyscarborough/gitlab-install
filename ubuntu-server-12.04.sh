@@ -2,13 +2,13 @@
 # Unattended GitLab Installation for Ubuntu Server 12.04 and 13.04 64-Bit
 #
 # Maintainer: @caseyscarborough
-# GitLab Version: 6.1
+# GitLab Version: 6.6
 #
 # This script installs GitLab server on Ubuntu Server 12.04 or 13.04 with all dependencies.
 #
 # INFORMATION
 # Distribution      : Ubuntu 12.04 & 13.04 64-Bit
-# GitLab Version    : 6.1
+# GitLab Version    : 6.6
 # Web Server        : Nginx
 # Init System       : systemd
 # Database          : MySQL
