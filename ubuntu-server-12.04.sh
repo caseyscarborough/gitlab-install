@@ -51,8 +51,7 @@ fi
 echo -e "\n*== Installing new packages...\n"
 sudo apt-get update -y
 sudo apt-get upgrade -y
-sudo apt-get install -y build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python-software-properties
-# sudo DEBIAN_FRONTEND='noninteractive' apt-get install -y postfix-policyd-spf-python postfix
+sudo apt-get install -y build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python-software-properties logrotate
 
 # Generate passwords for MySQL root and gitlab users.
 MYSQL_ROOT_PASSWORD=$(makepasswd --char=25)
@@ -63,9 +62,9 @@ MYSQL_GIT_PASSWORD=$(makepasswd --char=25)
 #
 echo -e "\n*== Downloading and configuring Ruby...\n"
 mkdir /tmp/ruby && cd /tmp/ruby
-curl --progress ftp://ftp.ruby-lang.org/pub/ruby/2.0/ruby-2.0.0-p247.tar.gz | tar xz
-cd ruby-2.0.0-p247
-./configure
+curl --progress ftp://ftp.ruby-lang.org/pub/ruby/2.0/ruby-2.0.0-p353.tar.gz | tar xz
+cd ruby-2.0.0-p353
+./configure --disable-install-rdoc
 make
 sudo make install
 sudo gem install bundler --no-ri --no-rdoc
@@ -85,9 +84,9 @@ sudo apt-get install -y mysql-server mysql-client libmysqlclient-dev
 sudo echo -e "GRANT USAGE ON *.* TO ''@'localhost';
 DROP USER ''@'localhost';
 DROP DATABASE IF EXISTS test;
-CREATE USER 'gitlab'@'localhost' IDENTIFIED BY '$MYSQL_GIT_PASSWORD';
+CREATE USER 'git'@'localhost' IDENTIFIED BY '$MYSQL_GIT_PASSWORD';
 CREATE DATABASE IF NOT EXISTS gitlabhq_production DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON gitlabhq_production.* TO 'gitlab'@'localhost';
+GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON gitlabhq_production.* TO 'git'@'localhost';
 " > /tmp/gitlab.sql
 mysql -u root -p$MYSQL_ROOT_PASSWORD -e "SOURCE /tmp/gitlab.sql"
 
@@ -97,8 +96,8 @@ sudo rm /tmp/gitlab.sql
 # Update Git
 #
 echo -e "\n*== Updating Git...\n"
-sudo add-apt-repository ppa:git-core/ppa
-sudo apt-get update
+sudo add-apt-repository -y ppa:git-core/ppa
+sudo apt-get update -y
 sudo apt-get install -y git
 
 ##
@@ -114,9 +113,8 @@ sudo -u $APP_USER -H git config --global core.autocrlf input
 #
 echo -e "\n*== Installing GitLab Shell...\n"
 cd $USER_ROOT
-sudo -u $APP_USER -H git clone https://github.com/gitlabhq/gitlab-shell.git
+sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-shell.git -b v1.8.0
 cd gitlab-shell
-sudo -u $APP_USER -H git checkout v1.7.1
 sudo -u $APP_USER -H cp config.yml.example config.yml
 sudo sed -i 's/http:\/\/localhost\//'$GITLAB_URL'/' /home/git/gitlab-shell/config.yml
 sudo -u $APP_USER -H ./bin/install
@@ -126,17 +124,20 @@ sudo -u $APP_USER -H ./bin/install
 #
 echo -e "\n*== Installing GitLab...\n"
 cd $USER_ROOT
-sudo -u $APP_USER -H git clone https://github.com/gitlabhq/gitlabhq.git gitlab
+sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 6-6-stable gitlab
 cd $APP_ROOT
-sudo -u $APP_USER -H git checkout 6-1-stable
-sudo -u $APP_USER -H mkdir $USER_ROOT/gitlab-satellites
 sudo -u $APP_USER -H cp $APP_ROOT/config/gitlab.yml.example $APP_ROOT/config/gitlab.yml
 sudo sed -i "s/host: localhost/host: ${DOMAIN_VAR}/" $APP_ROOT/config/gitlab.yml
 sudo -u $APP_USER cp config/database.yml.mysql config/database.yml
 sudo sed -i 's/username: root/username: gitlab/' $APP_ROOT/config/database.yml
 sudo sed -i 's/"secure password"/"'$MYSQL_GIT_PASSWORD'"/' $APP_ROOT/config/database.yml
 sudo -u $APP_USER -H chmod o-rwx config/database.yml
-sudo -u $APP_USER -H cp config/unicorn.rb.example config/unicorn.rb
+
+# Copy the example Unicorn config
+sudo -u $APP_USER -H cp $APP_ROOT/config/unicorn.rb.example $APP_ROOT/config/unicorn.rb
+
+# Copy the example Rack attack config
+sudo -u $APP_USER -H cp $APP_ROOT/config/initializers/rack_attack.rb.example $APP_ROOT/config/initializers/rack_attack.rb
 
 ##
 # Update permissions.
@@ -158,28 +159,34 @@ sudo chmod -R u+rwX public/uploads
 #
 echo -e "\n*== Installing required gems...\n"
 cd $APP_ROOT
-sudo gem install charlock_holmes --version '0.6.9.4'
 sudo -u $APP_USER -H bundle install --deployment --without development test postgres aws
 
 ##
 # Run setup and add startup script.
 #
-sudo sed -i 's/ask_to_continue/# ask_to_continue/' lib/tasks/gitlab/setup.rake
+sudo sed -i 's/ask_to_continue/# ask_to_continue/' $APP_ROOT/lib/tasks/gitlab/setup.rake
 sudo -u $APP_USER -H bundle exec rake gitlab:setup RAILS_ENV=production
-sudo sed -i 's/# ask_to_continue/ask_to_continue/' lib/tasks/gitlab/setup.rake
-sudo cp lib/support/init.d/gitlab /etc/init.d/gitlab
+sudo sed -i 's/# ask_to_continue/ask_to_continue/' $APP_ROOT/lib/tasks/gitlab/setup.rake
+
+sudo cp $APP_ROOT/lib/support/init.d/gitlab /etc/init.d/gitlab
 sudo chmod +x /etc/init.d/gitlab
 sudo update-rc.d gitlab defaults 21
+
+# Setup logrotate
+sudo cp $APP_ROOT/lib/support/logrotate/gitlab /etc/logrotate.d/gitlab
+
+# Check application status
+sudo -u git -H bundle exec rake gitlab:env:info RAILS_ENV=production
 
 ##
 # Nginx installation
 #
 echo -e "\n*== Installing Nginx...\n"
 sudo apt-get install -y nginx
-sudo cp lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
+sudo cp $APP_ROOT/lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
 sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
-sudo sed -i "s/YOUR_SERVER_FQDN/${DOMAIN_VAR}/" /etc/nginx/sites-enabled/gitlab
-sudo sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\t${DOMAIN_VAR}/" /etc/hosts
+sudo sed -i "s/YOUR_SERVER_FQDN/${DOMAIN_VAR}/" /etc/nginx/sites-available/gitlab
+sudo sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost\n127.0.0.1\t${DOMAIN_VAR}/" /etc/hosts
 
 # Start GitLab and Nginx!
 echo -e "\n*== Starting Gitlab!\n"
