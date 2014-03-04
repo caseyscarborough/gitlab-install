@@ -2,13 +2,13 @@
 # Unattended GitLab Installation for Ubuntu Server 12.04 and 13.04 64-Bit
 #
 # Maintainer: @caseyscarborough
-# GitLab Version: 6.6
+# GitLab Version: 6.6.4
 #
 # This script installs GitLab server on Ubuntu Server 12.04 or 13.04 with all dependencies.
 #
 # INFORMATION
 # Distribution      : Ubuntu 12.04 & 13.04 64-Bit
-# GitLab Version    : 6.6
+# GitLab Version    : 6.6.4
 # Web Server        : Nginx
 # Init System       : systemd
 # Database          : MySQL
@@ -51,7 +51,7 @@ fi
 echo -e "\n*== Installing new packages...\n"
 sudo apt-get update -y
 sudo apt-get upgrade -y
-sudo apt-get install -y build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python-software-properties logrotate
+sudo apt-get install -y build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python-software-properties sendmail logrotate
 
 # Generate passwords for MySQL root and gitlab users.
 MYSQL_ROOT_PASSWORD=$(makepasswd --char=25)
@@ -136,6 +136,10 @@ sudo -u $APP_USER -H chmod o-rwx config/database.yml
 # Copy the example Unicorn config
 sudo -u $APP_USER -H cp $APP_ROOT/config/unicorn.rb.example $APP_ROOT/config/unicorn.rb
 
+# Set the timeout to 300
+sudo sed -i 's/timeout 30/timeout 300/' $APP_ROOT/config/unicorn.rb
+sudo sed -i 's/error_log   /var/log/nginx/gitlab_error.log;/error_log   /var/log/nginx/gitlab_error.log;\n\nproxy_connect_timeout 300;\nproxy_read_timeout 300;/' /etc/nginx/sites-available/gitlab
+
 # Copy the example Rack attack config
 sudo -u $APP_USER -H cp $APP_ROOT/config/initializers/rack_attack.rb.example $APP_ROOT/config/initializers/rack_attack.rb
 
@@ -187,6 +191,9 @@ sudo cp $APP_ROOT/lib/support/nginx/gitlab /etc/nginx/sites-available/gitlab
 sudo ln -s /etc/nginx/sites-available/gitlab /etc/nginx/sites-enabled/gitlab
 sudo sed -i "s/YOUR_SERVER_FQDN/${DOMAIN_VAR}/" /etc/nginx/sites-available/gitlab
 sudo sed -i "s/127.0.0.1\tlocalhost/127.0.0.1\tlocalhost\n127.0.0.1\t${DOMAIN_VAR}/" /etc/hosts
+
+# Set timeout to 300
+sudo sed -i 's/gitlab_error.log;/gitlab_error.log;\n\n  proxy_connect_timeout 300;\n  proxy_read_timeout 300;/' /etc/nginx/sites-available/gitlab
 
 # Start GitLab and Nginx!
 echo -e "\n*== Starting Gitlab!\n"
