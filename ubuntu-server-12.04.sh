@@ -11,22 +11,62 @@
 # GitLab Version    : 6.6.4
 # Web Server        : Nginx
 # Init System       : systemd
-# Database          : MySQL
+# Database          : PostgreSQL (default) or MySQL
 # Contributors      : @caseyscarborough
 #
 # USAGE
-# curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04.sh | 
-#   sudo DOMAIN_VAR=gitlab.example.com bash
+#   wget -O ~/ubuntu-server-12.04.sh https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04.sh
+#   sudo bash ~/ubuntu-server-12.04.sh -d gitlab.example.com (--mysql OR --postgresql)
+
+help_menu ()
+{
+  echo "Usage: $0 -d DOMAIN_VAR (-m|--mysql)|(-p|--postgresql)"
+  echo "  -h,--help        Display this usage menu"
+  echo "  -d,--domain-var  Set the domain variable for GitLab, e.g. gitlab.example.com"
+  echo "  -p,--postgresql  Use PostgreSQL as the database (default)"
+  echo "  -m,--mysql       Use MySQL as the database (not recommended)"
+}
 
 # Set the application user and home directory.
 APP_USER=git
 USER_ROOT=/home/$APP_USER
+DATABASE_TYPE="PostgreSQL"
 
 # Set the application root.
 APP_ROOT=$USER_ROOT/gitlab
 
-# Set the URL for the GitLab instance.
-GITLAB_URL="http:\/\/$DOMAIN_VAR\/"
+# Get the variables from the command line.
+while test $# -gt 0; do
+  case "$1" in
+    -h|--help)
+      help_menu
+      exit 0
+      ;;
+    -d|--domain-var)
+      shift
+      if test $# -gt 0; then
+        DOMAIN_VAR=$1
+      else 
+        echo "No domain variable was specified."
+        help_menu
+        exit 1
+      fi
+      shift
+      ;;
+    -m|--mysql)
+      shift
+      DATABASE_TYPE="MySQL"
+      ;;
+    -p|--postgresql)
+      shift
+      DATABASE_TYPE="PostgreSQL"
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      exit 1
+      ;;
+  esac
+done
 
 # Check for domain variable.
 if [ $DOMAIN_VAR ]; then
@@ -36,32 +76,34 @@ if [ $DOMAIN_VAR ]; then
   
   echo -e "   Domain: $DOMAIN_VAR"
   echo -e "   GitLab URL: http://$DOMAIN_VAR/"
-  echo -e "   Application Root: $APP_ROOT\n"
+  echo -e "   Application Root: $APP_ROOT"
+  echo -e "   Database Type: $DATABASE_TYPE\n"
   
   echo -e "*==================================================================*\n"
   sleep 3
 else
-  echo "Please specify DOMAIN_VAR"
-  exit
+  echo "Please specify DOMAIN_VAR using the -d flag."
+  help_menu
+  exit 1
 fi
 
 ## 
 # Installing Packages
 #
 echo -e "\n*== Installing new packages...\n"
-sudo apt-get update -y
+sudo apt-get update -y 2>&1 >/dev/null
 sudo apt-get upgrade -y
 sudo apt-get install -y build-essential makepasswd zlib1g-dev libyaml-dev libssl-dev libgdbm-dev libreadline-dev libncurses5-dev libffi-dev curl git-core openssh-server redis-server checkinstall libxml2-dev libxslt-dev libcurl4-openssl-dev libicu-dev python-docutils python-software-properties sendmail logrotate
 
 # Generate passwords for MySQL root and gitlab users.
 MYSQL_ROOT_PASSWORD=$(makepasswd --char=25)
-MYSQL_GIT_PASSWORD=$(makepasswd --char=25)
+DB_USER_PASSWORD=$(makepasswd --char=25)
 
 ##
 # Download and compile Ruby
 #
 echo -e "\n*== Downloading and configuring Ruby...\n"
-mkdir /tmp/ruby && cd /tmp/ruby
+mkdir -p /tmp/ruby && cd /tmp/ruby
 curl --progress ftp://ftp.ruby-lang.org/pub/ruby/2.0/ruby-2.0.0-p353.tar.gz | tar xz
 cd ruby-2.0.0-p353
 ./configure --disable-install-rdoc
@@ -72,25 +114,36 @@ sudo gem install bundler --no-ri --no-rdoc
 # Add the git user.
 sudo adduser --disabled-login --gecos 'GitLab' $APP_USER
 
-##
-# MySQL Installation
-# 
-echo -e "\n*== Installing MySQL Server...\n"
-echo mysql-server mysql-server/root_password password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
-echo mysql-server mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
-sudo apt-get install -y mysql-server mysql-client libmysqlclient-dev
+if test $DATABASE_TYPE == "MySQL"; then
+  ##
+  # MySQL Installation
+  # 
+  echo -e "\n*== Installing MySQL Server...\n"
+  echo mysql-server mysql-server/root_password password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
+  echo mysql-server mysql-server/root_password_again password $MYSQL_ROOT_PASSWORD | sudo debconf-set-selections
+  sudo apt-get install -y mysql-server mysql-client libmysqlclient-dev
 
-# Secure the MySQL installation and add GitLab user and database.
-sudo echo -e "GRANT USAGE ON *.* TO ''@'localhost';
-DROP USER ''@'localhost';
-DROP DATABASE IF EXISTS test;
-CREATE USER 'git'@'localhost' IDENTIFIED BY '$MYSQL_GIT_PASSWORD';
-CREATE DATABASE IF NOT EXISTS gitlabhq_production DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON gitlabhq_production.* TO 'git'@'localhost';
-" > /tmp/gitlab.sql
-mysql -u root -p$MYSQL_ROOT_PASSWORD -e "SOURCE /tmp/gitlab.sql"
+  # Secure the MySQL installation and add GitLab user and database.
+  sudo echo -e "GRANT USAGE ON *.* TO ''@'localhost';
+  DROP USER ''@'localhost';
+  DROP DATABASE IF EXISTS test;
+  CREATE USER 'git'@'localhost' IDENTIFIED BY '$DB_USER_PASSWORD';
+  CREATE DATABASE IF NOT EXISTS gitlabhq_production DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+  GRANT SELECT, LOCK TABLES, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER ON gitlabhq_production.* TO 'git'@'localhost';
+  " > /tmp/gitlab.sql
+  mysql -u root -p$MYSQL_ROOT_PASSWORD -e "SOURCE /tmp/gitlab.sql"
 
-sudo rm /tmp/gitlab.sql
+  sudo rm /tmp/gitlab.sql
+else
+  ##
+  # PostgreSQL Installation
+  #
+  sudo apt-get install -y postgresql-9.1 postgresql-client libpq-dev
+
+  # Create user and database.
+  sudo -u postgres psql -c "CREATE USER git WITH PASSWORD '$DB_USER_PASSWORD';"
+  sudo -u postgres psql -c "CREATE DATABASE gitlabhq_production OWNER git;"
+fi
 
 ##
 # Update Git
@@ -116,7 +169,7 @@ cd $USER_ROOT
 sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-shell.git -b v1.8.0
 cd gitlab-shell
 sudo -u $APP_USER -H cp config.yml.example config.yml
-sudo sed -i 's/http:\/\/localhost\//'$GITLAB_URL'/' /home/git/gitlab-shell/config.yml
+sudo sed -i "s/localhost/$DOMAIN_VAR/" /home/git/gitlab-shell/config.yml
 sudo -u $APP_USER -H ./bin/install
 
 ## 
@@ -128,10 +181,18 @@ sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 6-
 cd $APP_ROOT
 sudo -u $APP_USER -H cp $APP_ROOT/config/gitlab.yml.example $APP_ROOT/config/gitlab.yml
 sudo sed -i "s/host: localhost/host: ${DOMAIN_VAR}/" $APP_ROOT/config/gitlab.yml
-sudo -u $APP_USER cp config/database.yml.mysql config/database.yml
-sudo sed -i 's/username: root/username: gitlab/' $APP_ROOT/config/database.yml
-sudo sed -i 's/"secure password"/"'$MYSQL_GIT_PASSWORD'"/' $APP_ROOT/config/database.yml
-sudo -u $APP_USER -H chmod o-rwx config/database.yml
+
+if test $DATABASE_TYPE == 'MySQL'; then
+  sudo -u $APP_USER cp $APP_ROOT/config/database.yml.mysql $APP_ROOT/config/database.yml
+  sudo sed -i 's/username: root/username: gitlab/' $APP_ROOT/config/database.yml
+  sudo sed -i 's/"secure password"/"'$DB_USER_PASSWORD'"/' $APP_ROOT/config/database.yml
+else
+  sudo -u $APP_USER cp $APP_ROOT/config/database.yml.postgresql $APP_ROOT/config/database.yml
+  sudo sed -h 's/# username: git/username: git/' $APP_ROOT/config/database.yml
+  sudo sed -i "s/# password:/password: '$DB_USER_PASSWORD'/" $APP_ROOT/config/database.yml
+fi
+
+sudo -u $APP_USER -H chmod o-rwx $APP_ROOT/config/database.yml
 
 # Copy the example Unicorn config
 sudo -u $APP_USER -H cp $APP_ROOT/config/unicorn.rb.example $APP_ROOT/config/unicorn.rb
@@ -163,7 +224,12 @@ sudo chmod -R u+rwX public/uploads
 #
 echo -e "\n*== Installing required gems...\n"
 cd $APP_ROOT
-sudo -u $APP_USER -H bundle install --deployment --without development test postgres aws
+
+if test $DATABASE_TYPE == 'MySQL'; then
+  sudo -u $APP_USER -H bundle install --deployment --without development test postgres aws
+else
+  sudo -u $APP_USER -H bundle install --deployment --without development test mysql aws
+fi
 
 ##
 # Run setup and add startup script.
@@ -180,7 +246,7 @@ sudo update-rc.d gitlab defaults 21
 sudo cp $APP_ROOT/lib/support/logrotate/gitlab /etc/logrotate.d/gitlab
 
 # Check application status
-sudo -u git -H bundle exec rake gitlab:env:info RAILS_ENV=production
+sudo -u $APP_USER -H bundle exec rake gitlab:env:info RAILS_ENV=production
 
 ##
 # Nginx installation
@@ -200,8 +266,14 @@ echo -e "\n*== Starting Gitlab!\n"
 sudo service gitlab start
 sudo service nginx restart
 
-sudo echo -e "root: ${MYSQL_ROOT_PASSWORD}\ngitlab: ${MYSQL_GIT_PASSWORD}" > $APP_ROOT/config/mysql.yml
-sudo -u $APP_USER -H chmod o-rwx $APP_ROOT/config/database.yml
+if test $DATABASE_TYPE == 'MySQL'; then
+  sudo echo -e "root: $MYSQL_ROOT_PASSWORD\ngitlab: $DB_USER_PASSWORD" > $APP_ROOT/config/mysql.yml
+else
+  sudo echo -e "git: $DB_USER_PASSWORD" > $APP_ROOT/config/postgresql.yml
+fi
+
+# Double check application status
+sudo -u $APP_USER -H bundle exec rake gitlab:check RAILS_ENV=production
 
 echo -e "*==================================================================*\n"
 
@@ -212,10 +284,15 @@ echo -e " Login with the default credentials:"
 echo -e "   admin@local.host"
 echo -e "   5iveL!fe\n"
 
-echo -e " Your MySQL username and passwords are located in the following file:"
-echo -e "   $APP_ROOT/config/mysql.yml\n"
+if test $DATABASE_TYPE == 'MySQL'; then
+  echo -e " Your MySQL username and passwords are located in the following file:"
+  echo -e "   $APP_ROOT/config/mysql.yml\n"
+else
+  echo -e " Your PostgreSQL username and password is located in the following file:"
+  echo -e "   $APP_ROOT/config/postgresql.yml\n"
+fi
 
-echo -e " Script written by Casey Scarborough, 2013."
+echo -e " Script written by Casey Scarborough, 2014."
 echo -e " https://github.com/caseyscarborough\n"
 
 echo -e "*==================================================================*"
