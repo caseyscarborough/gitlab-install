@@ -12,10 +12,18 @@ These are currently the tested and supported systems.
 
 ## Usage
 
-For __Ubuntu Server 12.04 or 13.04 64-Bit__, issue the following command, ensuring that you update the `DOMAIN_VAR` variable with your respective domain name:
+For __Ubuntu Server 12.04 or 13.04 64-Bit__, issue the following commands. Ensure that you use the `-d` or `--domain-var` flags to specify your domain name, and `--mysql` or `--postgresql` to choose your database. PostgreSQL is the default, and is recommended.
 
 ```bash
-curl https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04.sh | sudo DOMAIN_VAR=gitlab.example.com bash
+# Download the script and make it executable
+wget -O ~/ubuntu-server-12.04.sh https://raw.github.com/caseyscarborough/gitlab-install/master/ubuntu-server-12.04.sh
+chmod u+x ~/ubuntu-server-12.04.sh
+
+# Display the help menu
+~/ubuntu-server-12.04.sh (-h OR --help)
+
+# Run the script
+sudo ~/ubuntu-server-12.04.sh -d gitlab.example.com (--mysql OR --postgresql)
 ```
 
 > Note: Although this script is titled _ubuntu-server-12.04.sh_, it does in fact work on both 12.04 and 13.04.
