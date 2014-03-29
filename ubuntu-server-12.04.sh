@@ -166,7 +166,7 @@ sudo -u $APP_USER -H git config --global core.autocrlf input
 #
 echo -e "\n*== Installing GitLab Shell...\n"
 cd $USER_ROOT
-sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-shell.git -b v1.8.0
+sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-shell.git -b v1.9.1
 cd gitlab-shell
 sudo -u $APP_USER -H cp config.yml.example config.yml
 sudo sed -i "s/localhost/$DOMAIN_VAR/" /home/git/gitlab-shell/config.yml
@@ -177,7 +177,7 @@ sudo -u $APP_USER -H ./bin/install
 #
 echo -e "\n*== Installing GitLab...\n"
 cd $USER_ROOT
-sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 6-6-stable gitlab
+sudo -u $APP_USER -H git clone https://gitlab.com/gitlab-org/gitlab-ce.git -b 6-7-stable gitlab
 cd $APP_ROOT
 sudo -u $APP_USER -H cp $APP_ROOT/config/gitlab.yml.example $APP_ROOT/config/gitlab.yml
 sudo sed -i "s/host: localhost/host: ${DOMAIN_VAR}/" $APP_ROOT/config/gitlab.yml
@@ -188,7 +188,7 @@ if test $DATABASE_TYPE == 'MySQL'; then
   sudo sed -i 's/"secure password"/"'$DB_USER_PASSWORD'"/' $APP_ROOT/config/database.yml
 else
   sudo -u $APP_USER cp $APP_ROOT/config/database.yml.postgresql $APP_ROOT/config/database.yml
-  sudo sed -h 's/# username: git/username: git/' $APP_ROOT/config/database.yml
+  sudo sed -i 's/# username: git/username: git/' $APP_ROOT/config/database.yml
   sudo sed -i "s/# password:/password: '$DB_USER_PASSWORD'/" $APP_ROOT/config/database.yml
 fi
 
